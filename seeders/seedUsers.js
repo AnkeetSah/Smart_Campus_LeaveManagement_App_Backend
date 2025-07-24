@@ -25,23 +25,23 @@ const seedUsers = async () => {
 
     // Insert dummy students
     await Student.insertMany([
-  {
-    name: "Ankit Student",
-    email: "student1@demo.com",
-    password: hashedPassword,
-    rollNumber: "CSE2021A001",
-    department: "CSE",
-    semester: 5,
-    gender: "male",
-    section:"A",
-    hostel: {
-      name: "Hostel A",
-      roomNumber: "101",
-    },
-    semesterStartDate: new Date("2024-07-01"), // or today’s date
-    semesterEndDate: new Date("2024-12-15"),   // adjust as per your semester
-  },
-]);
+      {
+        name: "Ankit Student",
+        email: "student1@demo.com",
+        password: hashedPassword,
+        rollNumber: "CSE2021A001",
+        department: "CSE",
+        semester: 5,
+        gender: "male",
+        section: "A",
+        hostel: {
+          name: "Hostel A",
+          roomNumber: "101",
+        },
+        semesterStartDate: new Date("2024-07-01"), // or today’s date
+        semesterEndDate: new Date("2024-12-15"),   // adjust as per your semester
+      },
+    ]);
 
     // Insert dummy faculty
     await Faculty.insertMany([

@@ -11,7 +11,7 @@ const roleModelMap = {
   faculty: Faculty,
   hod: Hod,
   warden: Warden,
-  guard:Guard,
+  guard: Guard,
 };
 
 export const loginUser = async (req, res) => {
@@ -28,7 +28,7 @@ export const loginUser = async (req, res) => {
 
   try {
     const user = await Model.findOne({ email });
-    
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
