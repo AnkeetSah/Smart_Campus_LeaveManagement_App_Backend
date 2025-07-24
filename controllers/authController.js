@@ -39,11 +39,11 @@ export const loginUser = async (req, res) => {
     console.log("token", token);
     // ✅ Set JWT in HTTP-only cookie
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // send only over HTTPS in production
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  secure: process.env.NODE_ENV === "production", // must be true with SameSite=None
+});
+
     
 
 
