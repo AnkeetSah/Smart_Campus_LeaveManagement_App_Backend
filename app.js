@@ -7,11 +7,11 @@ import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 
-// ✅ INDUSTRY-STANDARD CORS SETUP
+// ✅ CORS SETUP (Only production domain)
 const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.FRONTEND_URL, // e.g., https://leaveflow.netlify.app
-].filter(Boolean); // removes undefined/null if FRONTEND_URL is missing
+  process.env.NODE_ENV === 'development' && 'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
