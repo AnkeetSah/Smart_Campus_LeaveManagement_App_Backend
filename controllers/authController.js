@@ -14,9 +14,11 @@ const roleModelMap = {
   guard: Guard,
 };
 
+// ✅ Login Controller
 export const loginUser = async (req, res) => {
   const { email, password, role } = req.body;
 
+  // Basic Validation
   if (!email || !password || !role) {
     return res.status(400).json({ message: "Email, password, and role are required." });
   }
@@ -28,7 +30,6 @@ export const loginUser = async (req, res) => {
 
   try {
     const user = await Model.findOne({ email });
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -36,9 +37,10 @@ export const loginUser = async (req, res) => {
 
     const token = generateToken(user._id, role);
 
+    // ✅ Set JWT in HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // send only over HTTPS in production
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -52,13 +54,13 @@ export const loginUser = async (req, res) => {
         role,
       },
     });
-  } catch (err) {
-    console.error("Login error:", err);
+  } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// In your controller file
+// ✅ Logout Controller
 export const logoutUser = (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
