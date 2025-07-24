@@ -1,3 +1,4 @@
+// server.js or app.js
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -7,30 +8,31 @@ import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 
-// ✅ CORS SETUP (Only production domain)
+// ✅ Define allowed origins clearly
 const allowedOrigins = [
-  process.env.NODE_ENV === 'development' && 'http://localhost:5173',
-  process.env.FRONTEND_URL,
-].filter(Boolean);
+  'http://localhost:5173', // dev frontend
+  process.env.FRONTEND_URL, // deployed frontend (e.g., Netlify URL)
+];
 
+// ✅ CORS options
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`❌ Blocked by CORS: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
+  credentials: true, // ✅ Allow cookies to be sent
 };
 
-// Middleware
+// ✅ Apply middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/me', userRoutes);
 app.use('/api/leaves', leaveRoutes);
