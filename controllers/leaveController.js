@@ -1,5 +1,7 @@
 import LeaveApplication from "../models/LeaveApplication.js";
 import Faculty from "../models/Faculty.js";
+import Student from "../models/Student.js";
+
 
 export const submitLeaveApplication = async (req, res) => {
   try {
@@ -12,12 +14,16 @@ export const submitLeaveApplication = async (req, res) => {
       attendanceAfterLeave,
     } = req.body;
 
-    // ✅ Get Cloudinary file URLs from uploaded documents
-    const documents = req.files?.map((file) => file.path); // .path contains Cloudinary URL
+    const documents = req.files?.map((file) => file.path); // cloudinary URLs
 
-    // Basic validation
     if (!reason || !fromDate || !toDate || !leaveType) {
       return res.status(400).json({ message: "Please fill all required fields" });
+    }
+
+    // 🔍 Get student info from DB to access department and section
+    const student = await Student.findById(req.user._id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
     }
 
     const newLeave = await LeaveApplication.create({
@@ -28,7 +34,19 @@ export const submitLeaveApplication = async (req, res) => {
       leaveType,
       currentAttendance,
       attendanceAfterLeave,
-      documents: documents || [], // ✅ use uploaded file URLs
+      documents: documents || [],
+    });
+
+    // 🧠 Get Socket.IO instance
+    const io = req.app.get('io');
+
+    // 📢 Notify faculty in the same department-section room (e.g., "CSE-A")
+    const roomName = `${student.department}-${student.section}`;
+    console.log('room value',roomName)
+    io.to(roomName).emit("leaveSubmitted", {
+      message: `New leave application from ${student.name}`,
+  
+      leave: newLeave,
     });
 
     res.status(201).json({
@@ -40,6 +58,7 @@ export const submitLeaveApplication = async (req, res) => {
     res.status(500).json({ message: "Server error while submitting leave" });
   }
 };
+
 
 
 /*------------------------------only for the user -------------------------------*/
@@ -87,7 +106,7 @@ export const getAllStudentLeaves = async (req, res) => {
   try {
     const user = req.user; // Contains logged-in user info
     const leaves = await LeaveApplication.find().populate("student");
-
+    
     const groupedLeaves = {
       pending: [],
       approved: [],
@@ -152,7 +171,7 @@ export const getAllStudentLeaves = async (req, res) => {
 export const actionOnLeave = async (req, res) => {
   const { appId, status, comment, decidedAt } = req.body;
   const role = req.user.role;
-
+  const department=req.user.department;
   if (role !== "student") {
     try {
       const updateField = {
@@ -160,15 +179,44 @@ export const actionOnLeave = async (req, res) => {
         [`decisionBy.${role}.comment`]: comment,
         [`decisionBy.${role}.decidedAt`]: decidedAt,
       };
+     // Set final status based on role and decision
+      if (role === 'warden' && status === "approved") {
+        updateField.finalStatus = "approved";
+      } else if (role === 'warden'&&status === "rejected") {
+        updateField.finalStatus = "rejected";
+      }
 
-      const updatedLeave = await LeaveApplication.findByIdAndUpdate(
-        appId,
-        { $set: updateField },
-        { new: true, runValidators: true }
-      );
+      // Update the leave application
+      await LeaveApplication.findByIdAndUpdate(appId, { $set: updateField });
 
+      // Populate student after update
+      const updatedLeave = await LeaveApplication.findById(appId).populate("student");
+ 
       if (!updatedLeave) {
         return res.status(404).json({ message: "Leave application not found." });
+      }
+
+      // Access io instance
+      const io = req.app.get("io");
+
+      // Get student details
+      const student = updatedLeave.student;
+      const studentRoom = `${student.department}-${student.section}-${student.id}`;
+
+      console.log("🔔 Emitting to student room:", studentRoom);
+
+      // Emit to specific student
+      io.to(studentRoom).emit("leaveStatusUpdated", updatedLeave);
+
+      // 🔔 If current role is faculty and status is approved → Notify HODs
+      if (role === "faculty" && department==student.department && status === "approved") {
+        const hodRoom = `hod-${student.department}`;
+        console.log("📢 Emitting to HOD room:", hodRoom);
+        io.to(hodRoom).emit("facultyApprovedLeave", updatedLeave); // you can handle this event on HOD dashboard
+      }
+      if(role=="hod" && status==="approved"){
+        const wardenRoom=`warden-${student.hostel.name}`;
+        io.to(wardenRoom).emit("hodApprovedLeave", updatedLeave); // you can handle this event on WARDEN dashboard
       }
 
       res.status(200).json(updatedLeave);
@@ -179,5 +227,4 @@ export const actionOnLeave = async (req, res) => {
     res.status(403).json({ message: "Access denied. Students cannot perform this action." });
   }
 };
-
 

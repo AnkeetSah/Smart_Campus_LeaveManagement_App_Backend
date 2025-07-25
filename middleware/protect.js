@@ -32,7 +32,7 @@ const protect = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { userId, role } = decoded;
-
+   
     const Model = roleModelMap[role];
     if (!Model) {
       return res.status(400).json({ message: "Invalid role in token" });
@@ -42,7 +42,7 @@ const protect = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    console.log(user)
+    // console.log(user)
     req.user = user;
     next();
   } catch (error) {
