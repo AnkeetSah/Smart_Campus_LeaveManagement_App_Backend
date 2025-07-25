@@ -45,18 +45,13 @@ export const loginUser = async (req, res) => {
 });
 
     
-
+    // ✅ Return user data without password
+    user.password = undefined; // Remove password from response
+    console.log("User logged in:", user);
 
     res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role:user.role,
-        section:user.section,
-        department:user.department
-      },
+      user: user,
     });
   } catch (error) {
     console.error("Login error:", error);
