@@ -13,6 +13,7 @@ const studentSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+       index: true // Ensure email is indexed for faster lookups
     },
     password: {
       type: String,
