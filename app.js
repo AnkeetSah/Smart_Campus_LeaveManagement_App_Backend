@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-
+import emailRoutes from './routes/emailRoutes.js'
 const app = express();
 
 // ✅ Define allowed origins clearly
@@ -36,6 +36,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/me', userRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/email',emailRoutes)
 
 app.get('/', (req, res) => {
   res.send('API is working fine ✅');

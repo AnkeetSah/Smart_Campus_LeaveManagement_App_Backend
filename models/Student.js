@@ -19,6 +19,10 @@ const studentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    branch: {
+      type: String,
+      required: true,
+    },
      section: {
       type: String,
       enum: ['A', 'B', 'C', 'D'], // You can expand this list if needed

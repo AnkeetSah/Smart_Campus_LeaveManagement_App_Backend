@@ -24,11 +24,11 @@ app.set('io', io);
 
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
-  console.log(`✅ Socket connected: ${socket.id}`);
+  // console.log(`✅ Socket connected: ${socket.id}`);
 
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
-    console.log(`📥 Socket ${socket.id} joined room ${roomId}`);
+    // console.log(`📥 Socket ${socket.id} joined room ${roomId}`);
   });
 
   socket.on('disconnect', () => {
