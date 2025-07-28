@@ -16,6 +16,9 @@ const hodSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+    }, branch: {
+      type: String,
+      required: true,
     },
     department: {
       type: String, // To match with faculty/student department
