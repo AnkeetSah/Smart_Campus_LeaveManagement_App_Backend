@@ -67,8 +67,8 @@ export const getAllStudentLeaves = async (req, res) => {
 export const actionOnLeave = async (req, res) => {
   const { appId, status, comment, decidedAt } = req.body;
   const role = req.user.role;
-  const department = req.user.department;
-
+  
+  const branch = req.user.toObject().branch;
   if (role !== "student") {
     try {
       const updateField = {
@@ -99,8 +99,9 @@ export const actionOnLeave = async (req, res) => {
       // 📡 Get socket instance and student room
       const io = req.app.get("io");
       const student = updatedLeave.student;
-      const studentRoom = `${student.department}-${student.section}-${student.id}`;
-
+    
+      const studentRoom = `${student.branch}-${student.section}-${student.id}`;
+      console.log('student room is ',studentRoom)
       // 🚀 Always emit update to student
       io.to(studentRoom).emit("leaveStatusUpdated", updatedLeave);
 
@@ -109,9 +110,17 @@ export const actionOnLeave = async (req, res) => {
         return res.status(200).json(updatedLeave);
       }
 
+      console.log('let see what happening',role === "faculty" )
+      console.log('let see what happening',branch === student.branch )
+      console.log('let see what happening',branch  )
+      console.log('let see what happening', student.branch )
+      console.log('let see what happening', status === "approved" )
+         
+        
       // ✅ Else, based on role and approval, emit to next authority
-      if (role === "faculty" && department === student.department && status === "approved") {
-        const hodRoom = `hod-${student.department}`;
+      if (role === "faculty" && branch === student.branch && status === "approved") {
+        const hodRoom = `hod-${student.branch}`;
+        console.log('hodRoom is',hodRoom)
         io.to(hodRoom).emit("facultyApprovedLeave", updatedLeave);
       }
 

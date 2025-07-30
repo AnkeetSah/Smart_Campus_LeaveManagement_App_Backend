@@ -18,7 +18,8 @@ const roleModelMap = {
 export const addUsers = async ({ users, role }) => {
   const Model = roleModelMap[role];
   if (!Model) throw new Error("Invalid role");
-
+ 
+   
 let finalUsers = [];
 
 function convertExcelDate(serial) {
@@ -48,15 +49,6 @@ if (role === "student") {
       }
     };
   });
-
-
-}
-
-
- 
-
-
-
    for (const user of finalUsers) {
     const password = generatePassword(user.name, user.email);
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -68,8 +60,72 @@ if (role === "student") {
     });
 
    await userDoc.save();
-    await sendCredentialsEmail({ email: user.email, name: user.name, password });
+    await sendCredentialsEmail({ email: user.email, name: user.name, password,role:role });
    }
+}
+
+if(role=="faculty"){
+    for(const user of users){
+      const password=generatePassword(user.name,user.email);
+      const hashedPassword=await bcrypt.hash(password,10);
+      const facultyDoc=new Model({
+        ...user,
+        password:hashedPassword
+      })
+      await facultyDoc.save(); 
+
+      await sendCredentialsEmail({ email: user.email, name: user.name, password,role:role });
+    }
+}
+
+if(role=="hod"){
+  for(const user of users){
+      const password=generatePassword(user.name,user.email);
+      const hashedPassword=await bcrypt.hash(password,10);
+      const hodDoc=new Model({
+        ...user,
+        password:hashedPassword
+      })
+      await hodDoc.save(); 
+
+        await sendCredentialsEmail({ email: user.email, name: user.name, password,role:role });
+    }
+}
+
+if(role=="warden"){
+  for(const user of users){
+      const password=generatePassword(user.name,user.email);
+      const hashedPassword=await bcrypt.hash(password,10);
+      const wardenDoc=new Model({
+        ...user,
+        password:hashedPassword
+      })
+      await wardenDoc.save(); 
+
+       await sendCredentialsEmail({ email: user.email, name: user.name, password,role:role });
+    }
+}
+
+if(role=="guard"){
+  for(const user of users){
+      const password=generatePassword(user.name,user.email);
+      const hashedPassword=await bcrypt.hash(password,10);
+      const guardDoc=new Model({
+        ...user,
+        password:hashedPassword
+      })
+      await guardDoc.save(); 
+
+        await sendCredentialsEmail({ email: user.email, name: user.name, password,role:role });
+    }
+}
+
+
+ 
+
+
+
+  
 
   return { message: `${users.length} ${role}s added successfully.` };
 };

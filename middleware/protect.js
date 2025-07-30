@@ -16,6 +16,7 @@ const roleModelMap = {
 const protect = async (req, res, next) => {
   try {
     let token;
+    console.log(token)
 
     if (
       req.headers.authorization &&

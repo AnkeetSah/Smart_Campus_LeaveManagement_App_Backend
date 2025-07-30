@@ -67,7 +67,10 @@ export const getLeaveApplicationById = async (id) => {
 
 export const getGroupedLeavesForUser = async (user) => {
   const leaves = await LeaveApplication.find().populate("student");
+  const plainUser = user.toObject();
 
+
+  console.log('user=',user)
   const groupedLeaves = {
     pending: [],
     approved: [],
@@ -76,10 +79,15 @@ export const getGroupedLeavesForUser = async (user) => {
 
   for (const leave of leaves) {
     if (user.role === "faculty") {
+
       const status = leave.decisionBy.faculty.status;
+      console.log(leave.student.branch === plainUser.branch)
+      
+      console.log(leave.student.branch)
+      console.log(leave.student.section === user.section)
       if (
-        leave.student.department === user.department &&
-        leave.student.section === user.section &&
+        leave.student.branch === plainUser.branch &&
+        leave.student.section === plainUser.section &&
         groupedLeaves.hasOwnProperty(status)
       ) {
         groupedLeaves[status].push(leave);
@@ -89,7 +97,7 @@ export const getGroupedLeavesForUser = async (user) => {
     else if (user.role === "hod") {
       const status = leave.decisionBy.hod.status;
       if (
-        leave.student.department === user.department &&
+        leave.student.branch === user.branch &&
         leave.decisionBy.faculty.status === "approved" &&
         groupedLeaves.hasOwnProperty(status)
       ) {

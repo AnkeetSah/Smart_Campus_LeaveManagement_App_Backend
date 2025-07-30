@@ -20,6 +20,9 @@ const facultySchema = new mongoose.Schema(
     department: {
       type: String,
       required: true,
+    },brach: {
+      type: String,
+      required: true,
     },
     section: {
       type: String,
