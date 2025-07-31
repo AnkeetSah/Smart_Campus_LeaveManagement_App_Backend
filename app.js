@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import changingRoutes from './routes/changingRoutes.js';
 // import emailRoutes from './routes/emailRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/me', userRoutes);
 app.use('/api/leaves', leaveRoutes);
 // app.use('/api/email',emailRoutes)
 app.use("/api/admin", adminRoutes);
+app.use("/api/change", changingRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is working fine ✅');

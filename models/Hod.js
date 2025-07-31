@@ -29,6 +29,11 @@ const hodSchema = new mongoose.Schema(
       enum: ["hod"],
       default: "hod",
     },
+    firstLogin: {
+      type: String,
+      default: "true",
+      required: true,
+    }
   },
   { timestamps: true }
 );

@@ -25,7 +25,11 @@ const wardenSchema = new mongoose.Schema(
       type: String,
       enum: ["warden"],
       default: "warden",
-    },
+    }, firstLogin: {
+      type: String,
+      default: "true",
+      required: true,
+    }
   },
   { timestamps: true }
 );

@@ -13,7 +13,7 @@ const studentSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-       index: true // Ensure email is indexed for faster lookups
+      index: true // Ensure email is indexed for faster lookups
     },
     password: {
       type: String,
@@ -23,7 +23,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-     section: {
+    section: {
       type: String,
       enum: ['A', 'B', 'C', 'D'], // You can expand this list if needed
       default: 'A',
@@ -65,6 +65,12 @@ const studentSchema = new mongoose.Schema(
       type: Date,
       required: true
     },
+    firstLogin: {
+      type: String,
+      default: "true",
+      required: true,
+    }
+
 
   },
   { timestamps: true }

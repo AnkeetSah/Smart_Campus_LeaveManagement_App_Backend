@@ -20,13 +20,13 @@ const facultySchema = new mongoose.Schema(
     department: {
       type: String,
       required: true,
-    },brach: {
+    }, branch: {
       type: String,
       required: true,
     },
     section: {
       type: String,
-      enum: ['A', 'B', 'C', 'D'], 
+      enum: ['A', 'B', 'C', 'D'],
       default: 'A',
       required: true,
     },
@@ -34,7 +34,11 @@ const facultySchema = new mongoose.Schema(
       type: String,
       enum: ["faculty"],
       default: "faculty",
-    },
+    },firstLogin: {
+      type: String,
+      default: "true",
+      required: true,
+    }
   },
   { timestamps: true }
 );

@@ -23,7 +23,11 @@ const guardSchema = new mongoose.Schema({
   role: {
     type: String,
     default: 'guard',
-  },
+  },firstLogin: {
+      type: String,
+      default: "true",
+      required: true,
+    },
 
   // 🆕 Array of scanned leaves
   scannedLeaves: [
