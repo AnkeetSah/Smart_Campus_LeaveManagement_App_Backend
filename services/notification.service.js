@@ -1,6 +1,13 @@
 import Faculty from "../models/Faculty.js";
 import Subscription from "../models/subscriptionModel.js";
 import webpush from '../config/pushConfig.js';
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+const frontendURL = isProduction
+  ? 'https://leaveflow.netlify.app' // hosted app URL
+  : 'http://localhost:5173';        // local dev URL
+
 /*export const notifyFacultyOnLeaveSubmit = (app, student, leave) => {
   const io = app.get("io");
   const room = `${student.branch}-${student.section}`;
@@ -35,7 +42,7 @@ export const notifyFacultyOnLeaveSubmit = async (app, student, leave) => {
   title: "New Leave Application",
   message: `New leave application from ${student.name}`,
   data: {
-    url: `http://localhost:5173/authority/dashboard`, // URL to redirect on click
+    url: `${frontendURL}/authority/dashboard`,// URL to redirect on click
     leaveId: leave._id,
     studentId: student._id,
   },
