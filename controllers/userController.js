@@ -1,7 +1,7 @@
 export const getMe = async (req, res) => {
   try {
     const user = req.user; 
-    console.log(user)
+   
     res.status(200).json(user);
   } catch (err) {
     console.error(err);

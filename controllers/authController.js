@@ -36,7 +36,7 @@ export const loginUser = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: "Incorrect password" });
 
     const token = generateToken(user._id, role);
-    console.log("token", token);
+   
     // ✅ Set JWT in HTTP-only cookie
     res.cookie("token", token, {
   httpOnly: true,
@@ -47,7 +47,7 @@ export const loginUser = async (req, res) => {
     
     // ✅ Return user data without password
     user.password = undefined; // Remove password from response
-    console.log("User logged in:", user);
+   
 
     res.status(200).json({
       message: "Login successful",
