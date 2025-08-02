@@ -74,145 +74,117 @@ export const getAllStudentLeaves = async (req, res) => {
 
 
 
+// 🔧 Helper to send web push notifications to all subscribers
+const sendPushToSubscribers = (subscribers, payload) => {
+  subscribers.forEach(sub =>
+    webpush.sendNotification(sub.subscription, JSON.stringify(payload))
+      .catch(err => console.error("Push error", err))
+  );
+};
+
+// 🔧 Helper to get user subscriptions
+const getUserSubscriptions = async (userIds) => {
+  return Subscription.find({ userId: { $in: userIds } });
+};
+
+// 🔧 Emit socket event
+const emitSocketEvent = (io, room, event, data) => {
+  io.to(room).emit(event, data);
+};
+
 export const actionOnLeave = async (req, res) => {
   const { appId, status, comment, decidedAt } = req.body;
-  const role = req.user.role;
-  
+  const { role } = req.user;
   const branch = req.user.toObject().branch;
-  if (role !== "student") {
-    try {
-      const updateField = {
-        [`decisionBy.${role}.status`]: status,
-        [`decisionBy.${role}.comment`]: comment,
-        [`decisionBy.${role}.decidedAt`]: decidedAt,
-      };
 
-      // ✅ Set finalStatus = "rejected" if any role rejects
-      if (status === "rejected") {
-        updateField.finalStatus = "rejected";
-      }
+  if (role === "student") {
+    return res.status(403).json({ message: "Access denied. Students cannot perform this action." });
+  }
 
-      // ✅ If WARDEN approves, finalStatus becomes approved
-      if (role === 'warden' && status === "approved") {
-        updateField.finalStatus = "approved";
-      }
+  try {
+    // ⚙️ Prepare fields to update
+    const updateField = {
+      [`decisionBy.${role}.status`]: status,
+      [`decisionBy.${role}.comment`]: comment,
+      [`decisionBy.${role}.decidedAt`]: decidedAt,
+    };
 
-      // 🔧 Update the leave application in DB
-      await LeaveApplication.findByIdAndUpdate(appId, { $set: updateField });
+    if (status === "rejected") updateField.finalStatus = "rejected";
+    if (role === "warden" && status === "approved") updateField.finalStatus = "approved";
 
-      // 🔄 Fetch updated leave with student populated
-      const updatedLeave = await LeaveApplication.findById(appId).populate("student");
-      if (!updatedLeave) {
-        return res.status(404).json({ message: "Leave application not found." });
-      }
-      
-      // 📡 Get socket instance and student room
-      const io = req.app.get("io");
-      const student = updatedLeave.student;
-    
-      const studentRoom = `${student.branch}-${student.section}-${student.id}`;
-      console.log('student room is ',studentRoom)
-      // 🚀 Always emit update to student
-      io.to(studentRoom).emit("leaveStatusUpdated", updatedLeave);
-        console.log('student id',student.id)
-      /*----------------------Push Notification to the student here--------------------------*/
-            const studentSubscriber= await Subscription.find({
-                 userId:student.id
-            })
+    // 🔄 Update leave status in DB
+    await LeaveApplication.findByIdAndUpdate(appId, { $set: updateField });
 
-            console.log('SUbscribed user',studentSubscriber)
+    // 📥 Fetch updated leave with student details
+    const updatedLeave = await LeaveApplication.findById(appId).populate("student");
+    if (!updatedLeave) return res.status(404).json({ message: "Leave application not found." });
 
-            if(studentSubscriber.length>0){
-              const payload={
-                title:"Leave application Update",
-                message:`You have a new update on your leave ${updatedLeave.reason}`,
-                data:{
-                  url:`${frontendURL}/dashboard/student`,
-                  leaveId:updatedLeave._id
-                }
-                              }
+    const student = updatedLeave.student;
+    const io = req.app.get("io");
 
-                //Emit to all the subscriber
-               studentSubscriber.forEach(sub => {
-                  webpush.sendNotification(sub.subscription, JSON.stringify(payload))
-                   .catch(error => console.error("Push error", error));
-               });
-            }
+    // 📡 Notify the student via socket
+    const studentRoom = `${student.branch}-${student.section}-${student.id}`;
+    emitSocketEvent(io, studentRoom, "leaveStatusUpdated", updatedLeave);
 
-      // ❌ If rejected, do not emit to other roles
-      if (status === "rejected") {
-        return res.status(200).json(updatedLeave);
-      }
-
-      
-        
-      // ✅ Else, based on role and approval, emit to next authority
-      if (role === "faculty" && branch === student.branch && status === "approved") {
-        const hodRoom = `hod-${student.branch}`;
-        console.log('hodRoom is',hodRoom)
-        io.to(hodRoom).emit("facultyApprovedLeave", updatedLeave);
-
-        const hod=await Hod.find({
-          branch:student.branch
-        })
-        
-        const hodSubscription= await Subscription.find({
-          userId: { $in: hod.map(h=> h._id) },
-        })
-        console.log('hod subscription',hodSubscription)
-
-          const payload = {
-  title: "New Leave Application",
-  message: `New leave application from ${student.name}`,
-  data: {
-    url: `${frontendURL}/authority/dashboard`,// URL to redirect on click
-    leaveId: updatedLeave._id,
-    studentId: student._id,
-  },
-};
-
- // Emit to all subscribers
-   hodSubscription.forEach(sub => {
-   webpush.sendNotification(sub.subscription, JSON.stringify(payload))
-    .catch(error => console.error("Push error", error));
-});
-      }
-
-      if (role === "hod" && status === "approved") {
-        const wardenRoom = `warden-${student.hostel.name}`;
-        io.to(wardenRoom).emit("hodApprovedLeave", updatedLeave);
-
-        const warden=await  Warden.find({
-             hostel: student.hostel.name
-        })
-       
-        const wardenSubscription= await Subscription.find({
-          userId:{$in:warden.map(w=>w._id)}
-        })
-        const payload = {
-  title: "New Leave Application",
-  message: `New leave application from ${student.name}`,
-  data: {
-    url: `${frontendURL}/authority/dashboard`,// URL to redirect on click
-    leaveId: updatedLeave._id,
-    studentId: student._id,
-  },
-};
-   wardenSubscription.forEach(sub => {
-      webpush.sendNotification(sub.subscription, JSON.stringify(payload))
-       .catch(error => console.error("Push error", error));
-   });
-
-      }
-
-      res.status(200).json(updatedLeave);
-    } catch (error) {
-      console.error("❌ Error in actionOnLeave:", error.message);
-      res.status(500).json({ error: error.message });
+    // 📬 Send push notification to student
+    const studentSubs = await getUserSubscriptions([student.id]);
+    if (studentSubs.length) {
+      sendPushToSubscribers(studentSubs, {
+        title: "Leave Application Update",
+        message: `Update on your leave: ${updatedLeave.reason}`,
+        data: {
+          url: `${frontendURL}/dashboard/student`,
+          leaveId: updatedLeave._id,
+        },
+      });
     }
-  } else {
-    res.status(403).json({ message: "Access denied. Students cannot perform this action." });
+
+    // ❌ If rejected, no further propagation
+    if (status === "rejected") return res.status(200).json(updatedLeave);
+
+    // ✅ If approved, send to next authority
+    if (role === "faculty" && status === "approved" && branch === student.branch) {
+      const hodRoom = `hod-${student.branch}`;
+      emitSocketEvent(io, hodRoom, "facultyApprovedLeave", updatedLeave);
+
+      const hods = await Hod.find({ branch: student.branch });
+      const hodSubs = await getUserSubscriptions(hods.map(h => h._id));
+      if (hodSubs.length) {
+        sendPushToSubscribers(hodSubs, {
+          title: "New Leave Application",
+          message: `New leave application from ${student.name}`,
+          data: {
+            url: `${frontendURL}/authority/dashboard`,
+            leaveId: updatedLeave._id,
+            studentId: student._id,
+          },
+        });
+      }
+    }
+
+    if (role === "hod" && status === "approved") {
+      const wardenRoom = `warden-${student.hostel.name}`;
+      emitSocketEvent(io, wardenRoom, "hodApprovedLeave", updatedLeave);
+
+      const wardens = await Warden.find({ hostel: student.hostel.name });
+      const wardenSubs = await getUserSubscriptions(wardens.map(w => w._id));
+      if (wardenSubs.length) {
+        sendPushToSubscribers(wardenSubs, {
+          title: "New Leave Application",
+          message: `New leave application from ${student.name}`,
+          data: {
+            url: `${frontendURL}/authority/dashboard`,
+            leaveId: updatedLeave._id,
+            studentId: student._id,
+          },
+        });
+      }
+    }
+
+    res.status(200).json(updatedLeave);
+  } catch (error) {
+    console.error("❌ Error in actionOnLeave:", error);
+    res.status(500).json({ error: error.message });
   }
 };
-
 
