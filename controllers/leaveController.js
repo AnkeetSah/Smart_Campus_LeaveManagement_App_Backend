@@ -96,7 +96,7 @@ export const actionOnLeave = async (req, res) => {
   const { appId, status, comment, decidedAt } = req.body;
   const { role } = req.user;
   const branch = req.user.toObject().branch;
-
+  console.log(status,comment)
   if (role === "student") {
     return res.status(403).json({ message: "Access denied. Students cannot perform this action." });
   }
@@ -109,11 +109,37 @@ export const actionOnLeave = async (req, res) => {
       [`decisionBy.${role}.decidedAt`]: decidedAt,
     };
 
+    
+
     if (status === "rejected") updateField.finalStatus = "rejected";
     if (role === "warden" && status === "approved") updateField.finalStatus = "approved";
 
     // 🔄 Update leave status in DB
     await LeaveApplication.findByIdAndUpdate(appId, { $set: updateField });
+    
+    //if the status is changes_requested, we need to notify the student
+    /*if (status === "changes_requested") {
+      const leave = await LeaveApplication.findById(appId).populate("student");
+      if (!leave) return res.status(404).json({ message: "Leave application not found." });
+
+      // Notify student about changes requested
+      const studentRoom = `${leave.student.branch}-${leave.student.section}-${leave.student.id}`;
+      const io = req.app.get("io");
+      emitSocketEvent(io, studentRoom, "leaveChangesRequested", leave);
+
+      // Send push notification to student
+      const studentSubs = await getUserSubscriptions([leave.student.id]);
+      if (studentSubs.length) {
+        sendPushToSubscribers(studentSubs, {
+          title: "Leave Application Update",
+          message: `Changes requested on your leave: ${leave.reason}`,
+          data: {
+            url: `${frontendURL}/dashboard/student`,
+            leaveId: leave._id,
+          },
+        });
+      }
+    }*/
 
     // 📥 Fetch updated leave with student details
     const updatedLeave = await LeaveApplication.findById(appId).populate("student");

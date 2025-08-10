@@ -10,6 +10,7 @@ export const createLeaveApplication = async (user, body, files) => {
     currentAttendance,
     attendanceAfterLeave,
   } = body;
+  console.log(body)
 
   const documents = files?.map((file) => file.path) || [];
 
@@ -31,6 +32,7 @@ export const createLeaveApplication = async (user, body, files) => {
     currentAttendance,
     attendanceAfterLeave,
     documents,
+
   });
 
   return { application, student };
