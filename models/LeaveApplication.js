@@ -17,6 +17,9 @@ const leaveApplicationSchema = new mongoose.Schema(
       name: { type: String },
       roomNumber: { type: String },
     },
+    addressDuringLeave:{
+       type:String
+    },
     currentAttendance: {
       type: Number,
       trim: true,

@@ -27,6 +27,7 @@ io.on('connection', (socket) => {
   // console.log(`✅ Socket connected: ${socket.id}`);
 
   socket.on('joinRoom', (roomId) => {
+    console.log('student id', roomId);
     socket.join(roomId);
     // console.log(`📥 Socket ${socket.id} joined room ${roomId}`);
   });

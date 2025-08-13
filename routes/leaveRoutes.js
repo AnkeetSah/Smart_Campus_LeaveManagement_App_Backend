@@ -4,7 +4,8 @@ import {
   getMyApplications,
   getLeaveById,
   getAllStudentLeaves,
-  actionOnLeave
+  actionOnLeave,
+  updateLeaveApplication
 } from "../controllers/leaveController.js";
 import protect from "../middleware/protect.js";
 import upload from "../middleware/cloudinaryUpload.js";
@@ -13,6 +14,8 @@ const router = express.Router();
 
 
 router.post("/", protect, upload.array("documents", 3), submitLeaveApplication);
+router.put(  "/update/:id",  protect,  upload.array("documents", 3), updateLeaveApplication);
+
 router.get("/my-applications", protect, getMyApplications);
 router.get("/getAllStudentLeaves", protect, getAllStudentLeaves);
 // leaveRoutes.js or wherever this route is
