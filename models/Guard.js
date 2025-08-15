@@ -30,18 +30,25 @@ const guardSchema = new mongoose.Schema({
     },
 
   // 🆕 Array of scanned leaves
-  scannedLeaves: [
-    {
-      leaveId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'LeaveApplication',
-      },
-      scannedAt: {
-        type: Date,
-        default: Date.now,
-      },
+ scannedLeaves: [
+  new mongoose.Schema({
+    leaveId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LeaveApplication',
+      required: true
+    },
+    count: {
+      type: Number,
+      default: 1
+    },
+    lastScannedAt: {
+      type: Date,
+      default: Date.now
     }
-  ],
+  }, { _id: false }) // no auto _id on subdocs
+]
+,
+
 
   createdAt: {
     type: Date,

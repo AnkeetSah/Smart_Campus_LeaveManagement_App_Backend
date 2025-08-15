@@ -5,6 +5,7 @@ import Hod from '../models/Hod.js'
 import Warden from '../models/Warden.js'
 import webpush from "../config/pushConfig.js";
 import Subscription from "../models/subscriptionModel.js";
+import Guard from "../models/Guard.js";
 const isProduction = process.env.NODE_ENV === 'production';
 
 const frontendURL = isProduction
@@ -69,13 +70,45 @@ export const getMyApplications = async (req, res) => {
 
 export const getLeaveById = async (req, res) => {
   try {
+    console.log("hey", req.user);
+
+    const guardData = await Guard.findById(req.user._id);
+    if (!guardData) {
+      return res.status(404).json({ message: "Guard not found" });
+    }
+
     const leave = await getLeaveApplicationById(req.params.id);
+
+    // Check if this leaveId is already in scannedLeaves
+    const existingLeave = guardData.scannedLeaves.find(
+      (item) => item.leaveId.toString() === leave._id.toString()
+    );
+
+    if (existingLeave) {
+      // Increment count and update last scanned time
+      existingLeave.count += 1;
+      existingLeave.lastScannedAt = Date.now();
+    } else {
+      // Add new entry for this leaveId
+      guardData.scannedLeaves.push({
+        leaveId: leave._id,
+        count: 1,
+        lastScannedAt: Date.now()
+      });
+    }
+
+    await guardData.save();
+
+    console.log("leave by id got called");
     res.status(200).json(leave);
+
   } catch (error) {
     console.error("❌ Error fetching leave by ID:", error.message);
     res.status(500).json({ message: error.message || "Server Error" });
   }
 };
+
+
 
 export const updateLeaveApplication = async (req, res) => {
   try {

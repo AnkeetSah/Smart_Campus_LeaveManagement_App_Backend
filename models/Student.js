@@ -69,7 +69,12 @@ const studentSchema = new mongoose.Schema(
       type: String,
       default: "true",
       required: true,
+    }, 
+    notificationCount: {
+      type: Number,
+      default: 0
     }
+
 
 
   },
