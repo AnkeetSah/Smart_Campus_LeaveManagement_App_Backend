@@ -7,7 +7,7 @@ import webpush from "../config/pushConfig.js";
 import Subscription from "../models/subscriptionModel.js";
 import Guard from "../models/Guard.js";
 const isProduction = process.env.NODE_ENV === 'production';
-
+import { createNotification } from "../services/createNotification.service.js";
 const frontendURL = isProduction
   ? 'https://leaveflow.netlify.app' // hosted app URL
   : 'http://localhost:5173';        // local dev URL
@@ -262,7 +262,7 @@ export const actionOnLeave = async (req, res) => {
   const { appId, status, comment, decidedAt } = req.body;
   const { role } = req.user;
   const branch = req.user.toObject().branch;
-  console.log(status, comment)
+  console.log(status, comment,role)
   if (role === "student") {
     return res.status(403).json({ message: "Access denied. Students cannot perform this action." });
   }
@@ -291,6 +291,27 @@ export const actionOnLeave = async (req, res) => {
 
     const student = updatedLeave.student;
     const io = req.app.get("io");
+      console.log('Student data',student)
+      console.log('leavet data',updatedLeave)
+    const redirectTo =
+   updatedLeave.finalStatus === "pending"
+    ? "/dashboard/student/leave-status"
+    : "/dashboard/student/leave-history";
+      console.log('authority role is ',role)
+      await createNotification({
+      student: student._id,
+      kind: updatedLeave.leaveType,
+      event: status,
+      message: comment,
+       notifiedBy:role,
+      redirectTo,
+      
+      meta: { leaveId: updatedLeave._id }
+    });
+
+
+    
+
 
     // 📡 Notify the student via socket
     const studentRoom = `${student.branch}-${student.section}-${student.id}`;
