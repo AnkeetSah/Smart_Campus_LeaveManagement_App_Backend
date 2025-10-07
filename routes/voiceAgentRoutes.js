@@ -2,16 +2,38 @@ import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import protect from "../middleware/protect.js";
+
 dotenv.config();
 const router = express.Router();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-router.post("/ask", protect,async (req, res) => {
-    
+// ✅ Helper: Count working days between two dates (Mon–Fri)
+function getWorkingDaysBetween(start, end) {
+  let count = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) { // 0 = Sunday, 6 = Saturday
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
+}
+
+router.post("/ask", protect, async (req, res) => {
+  console.log(req.user);
   try {
-    const { userResponse, previousQuestion = "", leaveData = {}, userLocation = "", user } = req.body;
-    console.log(user)
+    const {
+      userResponse,
+      previousQuestion = "",
+      leaveData = {},
+      userLocation = "",
+      user,
+    } = req.body;
+
     const today = new Date().toISOString().split("T")[0];
 
     // Helper: parse and validate date string, return YYYY-MM-DD or null if invalid
@@ -21,7 +43,7 @@ router.post("/ask", protect,async (req, res) => {
       return d.toISOString().split("T")[0];
     };
 
-    // Validate date input according to previous question context
+    // ✅ Date validation based on question context
     if (previousQuestion.toLowerCase().includes("start date")) {
       const startDate = parseDate(userResponse);
       if (!startDate || startDate <= today) {
@@ -48,47 +70,23 @@ router.post("/ask", protect,async (req, res) => {
       leaveData.toDate = endDate;
     }
 
+    // ✅ Prompt for Gemini
     const prompt = `
-You are a warm, friendly, and intelligent conversational AI assistant helping a student of a college named ${user.name} fill out a leave application form step-by-step. 
-Your goal is to make this process smooth, natural, and logical — as if a helpful human is guiding the student with empathy and awareness.
-Keep analysing the user's responses and the context provided to ensure you ask the right questions and validate their answers.
-Validate the user's responses to ensure they make sense and are appropriate for a student leave application.
-Each question should be short, friendly, and human-like, guiding the user to provide the necessary information without overwhelming them.
+You are a conversational AI helping ${user.name} fill out a college leave application form step-by-step. 
+Return ONLY valid JSON — no greetings, no explanations, no markdown, no code fences.
 
-**Important rules:**
-- Always use today's date ("${today}") for date checks. its very important be strict with dates.
-- If the user provides a date in the past, ask them to clarify it.
-- You should not automatically update the leave Date — always question the user again if they give wrong dates.
-- If the user provides an invalid date, ask them to clarify it.
-- If user says a past date, say: "Hmm, I think the dates might need a quick check. Can you clarify them for me again?"
-- Validate dates:
-  * Start date must be after today.
-  * End date must be after the start date.
-- Don't repeat a question word-for-word if the user doesn't respond clearly — rephrase slightly.
-- Don't ask for specific date formats; accept anything and convert to YYYY-MM-DD.
-- Don't repeat questions for fields already answered.
-- Auto-correct location using detected location: "${userLocation}"
-- No emojis.
-
-**Tone:**
-- Warm, friendly, and encouraging.
-- Conversational and natural.
-- Empathetic and respectful.
-- Student-focused, not corporate.
-- Always in a human-like conversation mood with small talk.
-
-**Logic rules:**
-1. Validate Leave Type vs Reason:
-   - If leave type is "personal" but reason is health/emergency, flag and re-confirm.
-2. Polish Reason for clarity without changing meaning and the sentence should be detailed not very short.
-3. Validate Dates strictly against "${today}".
-4. Ask one question at a time in this order:
-   1. leaveType it should be one of ["personal", "medical", "emergency"] or "other" no type error keep in this type only.
-   2. fromDate always after today.
-   3. toDate   always after fromDate.
-   4. currentAttendance It should be a percentage (e.g., 75%). only keep percentage value data type in number. dont add % sign.
+**Rules:**
+- Always use today's date ("${today}") for validation.
+- Start date > today.
+- End date > start date.
+- Accept any date format, normalize to YYYY-MM-DD.
+- Ask in this order:
+   1. leaveType ["personal","medical","emergency","other"]
+   2. fromDate
+   3. toDate
+   4. currentAttendance (number only, no % sign)
    5. reason
-   6. emergencyContact (digits only) 
+   6. emergencyContact (digits only)
    7. addressDuringLeave (optional)
 
 **Context:**
@@ -97,44 +95,81 @@ User Response: "${userResponse}"
 Leave data so far:
 ${JSON.stringify(leaveData, null, 2)}
 
-
 **Output format (strict):**
-\`\`\`json
 {
-  "nextQuestion": "Short, friendly, and human-like question",
+  "nextQuestion": "Short, friendly question",
   "leaveData": {
     "leaveType": "...",
     "fromDate": "...",
     "toDate": "...",
     "currentAttendance": "...",
+    "attendanceAfterLeave": "...",
     "reason": "...",
     "emergencyContact": "...",
     "addressDuringLeave": "..."
   },
   "isComplete": true/false
 }
-\`\`\`
 `.trim();
 
-    // Use the correct @google/genai syntax
+    // ✅ Call Gemini
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Use the model that works with your package
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
 
-    let text = response.text;
-    
-    // Clean the response text
-    text = text.replace(/```json|```/g, "").trim();
+    // ✅ Extract text safely
+    let rawText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    rawText = rawText.replace(/```json|```/g, "").trim();
 
-    const parsedResponse = JSON.parse(text);
+    // ✅ Extract only JSON part if extra text exists
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Gemini did not return valid JSON");
+    }
+
+    const parsedResponse = JSON.parse(jsonMatch[0]);
+
+    // ✅ Attendance calculation if we have all required data
+    if (
+      parsedResponse.leaveData.fromDate &&
+      parsedResponse.leaveData.toDate &&
+      parsedResponse.leaveData.currentAttendance
+    ) {
+      const semStart = new Date(req.user.semesterStartDate);
+      const semEnd = new Date(req.user.semesterEndDate);
+      const totalWorkingDays = getWorkingDaysBetween(semStart, semEnd);
+      const estimatedTotalClasses = totalWorkingDays * 4;
+
+      const currentAttendance = Number(
+        parsedResponse.leaveData.currentAttendance
+      );
+      const attendedClasses =
+        (currentAttendance / 100) * estimatedTotalClasses;
+
+      // Leave period working days
+      const leaveDays = getWorkingDaysBetween(
+        new Date(parsedResponse.leaveData.fromDate),
+        new Date(parsedResponse.leaveData.toDate)
+      );
+
+      const missedLeaveClasses = leaveDays * 4;
+      const newTotalClasses = estimatedTotalClasses + missedLeaveClasses;
+      const attendanceAfterLeave =
+        (attendedClasses / newTotalClasses) * 100;
+
+      parsedResponse.leaveData.attendanceAfterLeave =
+        attendanceAfterLeave.toFixed(2);
+    }
 
     return res.json(parsedResponse);
   } catch (error) {
     console.error("Gemini API Error:", error);
     return res.status(500).json({
       error: "Gemini processing failed",
-      message: error.message || "An unexpected error occurred while generating the response.",
+      message:
+        error.message ||
+        "An unexpected error occurred while generating the response.",
     });
   }
 });
