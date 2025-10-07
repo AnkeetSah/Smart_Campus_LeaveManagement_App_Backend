@@ -66,10 +66,11 @@ const studentSchema = new mongoose.Schema(
       required: true
     },
     firstLogin: {
-      type: String,
-      default: "true",
-      required: true,
-    }, 
+  type: Boolean,
+  default: true,
+  required: true,
+},
+
     notificationCount: {
       type: Number,
       default: 0

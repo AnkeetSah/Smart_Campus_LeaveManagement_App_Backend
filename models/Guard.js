@@ -4,11 +4,7 @@ const guardSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  employeeId: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+  
   phone: {
     type: String,
   },
@@ -23,11 +19,11 @@ const guardSchema = new mongoose.Schema({
   role: {
     type: String,
     default: 'guard',
-  },firstLogin: {
-      type: String,
-      default: "true",
-      required: true,
-    },
+  }, firstLogin: {
+  type: Boolean,
+  default: true,
+  required: true,
+},
 
   // 🆕 Array of scanned leaves
  scannedLeaves: [

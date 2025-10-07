@@ -34,11 +34,11 @@ const facultySchema = new mongoose.Schema(
       type: String,
       enum: ["faculty"],
       default: "faculty",
-    },firstLogin: {
-      type: String,
-      default: "true",
-      required: true,
-    }
+    }, firstLogin: {
+  type: Boolean,
+  default: true,
+  required: true,
+},
   },
   { timestamps: true }
 );

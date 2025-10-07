@@ -10,6 +10,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import voiceAgentRoutes from './routes/voiceAgentRoutes.js';
 // import emailRoutes from './routes/emailRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
+import autoAccountCreation from './routes/autoAccountCreation.js'
 const app = express();
 
 // ✅ Define allowed origins clearly
@@ -45,6 +46,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/change", changingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/voice-agent',voiceAgentRoutes);
+app.use('/api/add-user',autoAccountCreation);
 app.get('/', (req, res) => {
   res.send('API is working fine ✅');
 });

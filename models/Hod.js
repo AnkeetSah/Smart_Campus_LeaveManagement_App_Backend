@@ -30,10 +30,10 @@ const hodSchema = new mongoose.Schema(
       default: "hod",
     },
     firstLogin: {
-      type: String,
-      default: "true",
-      required: true,
-    }
+  type: Boolean,
+  default: true,
+  required: true,
+},
   },
   { timestamps: true }
 );

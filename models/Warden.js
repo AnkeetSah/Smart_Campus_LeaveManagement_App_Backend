@@ -26,10 +26,10 @@ const wardenSchema = new mongoose.Schema(
       enum: ["warden"],
       default: "warden",
     }, firstLogin: {
-      type: String,
-      default: "true",
-      required: true,
-    }
+  type: Boolean,
+  default: true,
+  required: true,
+},
   },
   { timestamps: true }
 );
