@@ -1,15 +1,17 @@
 import express from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-
+import protect from "../middleware/protect.js";
 dotenv.config();
 const router = express.Router();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-router.post("/ask", async (req, res) => {
-  try {
-    const { userResponse, previousQuestion = "", leaveData = {}, userLocation = "" ,user} = req.body;
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+router.post("/ask", protect,async (req, res) => {
+    
+  try {
+    const { userResponse, previousQuestion = "", leaveData = {}, userLocation = "", user } = req.body;
+    console.log(user)
     const today = new Date().toISOString().split("T")[0];
 
     // Helper: parse and validate date string, return YYYY-MM-DD or null if invalid
@@ -49,8 +51,8 @@ router.post("/ask", async (req, res) => {
     const prompt = `
 You are a warm, friendly, and intelligent conversational AI assistant helping a student of a college named ${user.name} fill out a leave application form step-by-step. 
 Your goal is to make this process smooth, natural, and logical — as if a helpful human is guiding the student with empathy and awareness.
-Keep analysing the user’s responses and the context provided to ensure you ask the right questions and validate their answers.
-Validate the user’s responses to ensure they make sense and are appropriate for a student leave application.
+Keep analysing the user's responses and the context provided to ensure you ask the right questions and validate their answers.
+Validate the user's responses to ensure they make sense and are appropriate for a student leave application.
 Each question should be short, friendly, and human-like, guiding the user to provide the necessary information without overwhelming them.
 
 **Important rules:**
@@ -62,9 +64,9 @@ Each question should be short, friendly, and human-like, guiding the user to pro
 - Validate dates:
   * Start date must be after today.
   * End date must be after the start date.
-- Don’t repeat a question word-for-word if the user doesn't respond clearly — rephrase slightly.
-- Don’t ask for specific date formats; accept anything and convert to YYYY-MM-DD.
-- Don’t repeat questions for fields already answered.
+- Don't repeat a question word-for-word if the user doesn't respond clearly — rephrase slightly.
+- Don't ask for specific date formats; accept anything and convert to YYYY-MM-DD.
+- Don't repeat questions for fields already answered.
 - Auto-correct location using detected location: "${userLocation}"
 - No emojis.
 
@@ -114,9 +116,16 @@ ${JSON.stringify(leaveData, null, 2)}
 \`\`\`
 `.trim();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent([prompt]);
-    const text = result.response.text().replace(/```json|```/g, "").trim();
+    // Use the correct @google/genai syntax
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash", // Use the model that works with your package
+      contents: prompt,
+    });
+
+    let text = response.text;
+    
+    // Clean the response text
+    text = text.replace(/```json|```/g, "").trim();
 
     const parsedResponse = JSON.parse(text);
 
