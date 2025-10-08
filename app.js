@@ -17,7 +17,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173', // dev frontend
   process.env.FRONTEND_URL, // deployed frontend (e.g., Netlify URL)
-  'https://leaveflowlanding.netlify.app/'
+  'https://leaveflowlanding.netlify.app'
 ];
 
 // ✅ CORS options
