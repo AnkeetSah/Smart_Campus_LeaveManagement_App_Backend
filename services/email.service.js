@@ -30,7 +30,7 @@ export const sendCredentialsEmail = async ({ email, name, password }) => {
       html: htmlContent,
     });
 
-    console.log("✅ Email sent successfully:", message.id);
+    console.log("✅ Email sent successfully:", message.id,email);
   } catch (err) {
     console.error("❌ Email sending failed:", err);
     throw err;
