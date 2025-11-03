@@ -6,6 +6,7 @@ import connectDB from "../config/db.js";
 import Guard from "../models/Guard.js";
 
 dotenv.config();
+
 // ✅ Connect to MongoDB
 await connectDB();
 
@@ -13,28 +14,30 @@ const seedGuards = async () => {
   try {
     const hashedPassword = await bcrypt.hash("123456", 10); // default password
 
-    // 🔄 Clear existing guards
-    await Guard.deleteMany();
-
-    // ✅ Insert dummy guards
-    await Guard.insertMany([
+    // List of guards to insert
+    const guards = [
       {
         name: "Ajay Guard",
         employeeId: "G001",
         phone: "9876543210",
-        email: "guard1@demo.com",
+        email: "guard@demo.com",
         password: hashedPassword,
+        role: "guard",
+        firstLogin: true,
       },
-      {
-        name: "Sunita Guard",
-        employeeId: "G002",
-        phone: "8765432109",
-        email: "guard2@demo.com",
-        password: hashedPassword,
-      },
-    ]);
+      // You can add more guards here if needed
+    ];
 
-    console.log("✅ Dummy guards inserted successfully");
+    for (const g of guards) {
+      const exists = await Guard.findOne({ $or: [{ employeeId: g.employeeId }, { email: g.email }] });
+      if (!exists) {
+        await Guard.create(g);
+        console.log(`✅ Guard ${g.name} inserted successfully`);
+      } else {
+        console.log(`⚠️ Guard ${g.name} already exists, skipping`);
+      }
+    }
+
     process.exit();
   } catch (error) {
     console.error("❌ Seeding error:", error.message);

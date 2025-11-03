@@ -107,7 +107,10 @@ export const getGroupedLeavesForUser = async (user) => {
       }
     }
 
-    else if (user.role === "warden") {
+    else if (user.role === "warden" && user.hostel === leave.student.hostel.name) {
+      console.log('leave.student=',leave.student.hostel.name)
+      console.log('user.hostel=',user.hostel)
+
       const status = leave.decisionBy.warden.status;
       if (
         leave.decisionBy.faculty.status === "approved" &&
